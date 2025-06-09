@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de Désinfection de Puits</title>
+    <!-- Tailwind CSS pour un design moderne et réactif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font "Inter" pour une meilleure lisibilité -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Appliquer la police Inter à tout le corps du document */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style pour masquer/afficher le champ de concentration personnalisée */
+        .hidden-field {
+            display: none;
+            transition: all 0.3s ease-in-out;
+        }
+        .visible-field {
+            display: block;
+        }
+        /* Style pour les transitions douces sur les résultats */
+        #results-container {
+            transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+        }
+        #results-container.visible {
+            opacity: 1;
+            max-height: 2000px; /* Assez grand pour ne pas couper le contenu */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6">
+        
+        <!-- En-tête du widget -->
+        <div class="text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Calculateur de Désinfection de Puits</h1>
+            <p class="mt-2 text-base text-gray-600 font-semibold">Pour un puits de 6 pouces (15 cm) de diamètre</p>
+            <p class="mt-1 text-sm text-gray-500">Basé sur les recommandations du <a href="https://www.environnement.gouv.qc.ca/eau/potable/depliant/index.htm" target="_blank" class="text-blue-600 hover:underline font-medium">ministère de l'Environnement du Québec</a>.</p>
+        </div>
+
+        <div class="border-t border-gray-200"></div>
+
+        <!-- Section des paramètres -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Colonne des entrées utilisateur -->
+            <div class="space-y-6">
+                <div>
+                    <label for="water-depth" class="block text-base font-semibold text-gray-700">1. Profondeur de la colonne d'eau (en pieds)</label>
+                    <div class="mt-2 flex items-center">
+                        <input type="number" id="water-depth" name="water-depth" min="1" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3" placeholder="Ex: 150">
+                        <span class="ml-3 text-gray-500 font-medium">pieds</span>
+                    </div>
+                    <p id="metric-conversion" class="mt-2 text-xs text-gray-500 h-4"></p>
+                </div>
+
+                <div>
+                    <h3 class="text-base font-semibold text-gray-700">2. Situation du puits</h3>
+                    <fieldset class="mt-2">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input id="new-well" name="well-type" type="radio" value="new" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                <label for="new-well" class="ml-3 block text-sm font-medium text-gray-700">Nouveau puits (concentration 250 mg/L)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="existing-well" name="well-type" type="radio" value="existing" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <label for="existing-well" class="ml-3 block text-sm font-medium text-gray-700">Puits en fonction (concentration 50 mg/L)</label>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div>
+                    <h3 class="text-base font-semibold text-gray-700">3. Concentration de l'eau de Javel</h3>
+                    <fieldset class="mt-2">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input id="bleach-default" name="bleach-concentration" type="radio" value="default" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                <label for="bleach-default" class="ml-3 block text-sm font-medium text-gray-700">Domestique (5,25 %)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="bleach-custom" name="bleach-concentration" type="radio" value="custom" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <label for="bleach-custom" class="ml-3 block text-sm font-medium text-gray-700">Autre concentration</label>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div id="custom-bleach-field" class="mt-2 hidden-field">
+                         <div class="mt-2 flex items-center">
+                            <input type="number" name="custom-bleach-value" id="custom-bleach-value" min="1" max="100" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3" placeholder="Ex: 12">
+                            <span class="ml-3 text-gray-500 font-medium">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bouton de calcul -->
+                <button id="calculate-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    Calculer le dosage
+                </button>
+                 <p id="error-message" class="text-center text-red-500 text-sm mt-2 h-5"></p>
+            </div>
+
+            <!-- Colonne des résultats et instructions -->
+            <div id="results-container" class="bg-gray-50 rounded-lg p-6 space-y-4">
+                 <h2 class="text-xl font-bold text-gray-800">Résultats et Procédure</h2>
+                 
+                 <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md" role="alert">
+                    <p class="font-bold">Quantité d'eau de Javel requise :</p>
+                    <p id="result-text" class="text-2xl font-extrabold"></p>
+                    <p id="result-subtext" class="text-sm"></p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-700 mt-4">Procédure de désinfection recommandée :</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600 mt-2">
+                        <li><b>Préparation :</b> Mettez en mode "bypass" tout système de traitement d'eau (adoucisseur, etc.). Prévoyez de l'eau potable pour 24-48h.</li>
+                        <li><b>Application :</b> Versez la quantité calculée d'eau de Javel dans le puits, en rinçant les parois.</li>
+                        <li><b>Mélange :</b> Faites circuler l'eau sur elle-même avec un boyau d'arrosage pendant 30 min, ou jusqu'à sentir une odeur de chlore.</li>
+                        <li><b>Circulation :</b> Ouvrez chaque robinet d'eau froide un à un jusqu'à sentir l'odeur de chlore, puis refermez.</li>
+                        <li><b>Temps de contact :</b> Laissez l'eau reposer dans le système pendant <b>12 à 24 heures</b> sans utiliser l'eau.</li>
+                        <li><b>Rinçage :</b> Videz l'eau par un robinet extérieur jusqu'à ce que l'odeur de chlore disparaisse. Rincez ensuite la tuyauterie intérieure.</li>
+                        <li><b>Analyse :</b> Attendez au moins une semaine après le rinçage avant de faire analyser l'eau par un laboratoire accrédité.</li>
+                    </ol>
+                </div>
+
+                <div class="mt-4 text-xs text-gray-500 border-t pt-4">
+                    <strong>Avis :</strong> Ce calculateur est un outil d'aide. Il ne remplace pas l'avis d'un puisatier ou d'un professionnel qualifié. Les résultats sont basés sur un puits standard de 6 pouces de diamètre.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Éléments du DOM ---
+        const waterDepthInput = document.getElementById('water-depth');
+        const metricConversionText = document.getElementById('metric-conversion');
+        const customBleachRadio = document.getElementById('bleach-custom');
+        const defaultBleachRadio = document.getElementById('bleach-default');
+        const customBleachField = document.getElementById('custom-bleach-field');
+        const customBleachValueInput = document.getElementById('custom-bleach-value');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultText = document.getElementById('result-text');
+        const resultSubtext = document.getElementById('result-subtext');
+        const resultsContainer = document.getElementById('results-container');
+        const errorMessage = document.getElementById('error-message');
+
+        // --- Constantes de conversion ---
+        const FEET_TO_METERS = 0.3048;
+
+        // --- Logique du widget ---
+
+        // Gérer l'affichage du champ de concentration personnalisée
+        customBleachRadio.addEventListener('change', () => {
+            if (customBleachRadio.checked) {
+                customBleachField.classList.remove('hidden-field');
+                customBleachField.classList.add('visible-field');
+            }
+        });
+
+        defaultBleachRadio.addEventListener('change', () => {
+            if (defaultBleachRadio.checked) {
+                customBleachField.classList.add('hidden-field');
+                customBleachField.classList.remove('visible-field');
+            }
+        });
+
+        // Mettre à jour la conversion en mètres en temps réel
+        waterDepthInput.addEventListener('input', () => {
+            const depthInFeet = parseFloat(waterDepthInput.value);
+            if (!isNaN(depthInFeet) && depthInFeet > 0) {
+                const depthInMeters = depthInFeet * FEET_TO_METERS;
+                metricConversionText.textContent = `(équivaut à ${depthInMeters.toFixed(2)} mètres)`;
+            } else {
+                metricConversionText.textContent = '';
+            }
+        });
+        
+        // Attacher l'événement au bouton de calcul
+        calculateBtn.addEventListener('click', () => {
+            resultsContainer.classList.remove('visible');
+            errorMessage.textContent = '';
+
+            const waterDepthFeet = parseFloat(waterDepthInput.value);
+            if (isNaN(waterDepthFeet) || waterDepthFeet <= 0) {
+                errorMessage.textContent = "Veuillez entrer une profondeur d'eau valide en pieds.";
+                waterDepthInput.focus();
+                return;
+            }
+
+            let bleachConcentration = 5.25; // %
+            if (customBleachRadio.checked) {
+                const customConcentration = parseFloat(customBleachValueInput.value);
+                if (isNaN(customConcentration) || customConcentration <= 0) {
+                    errorMessage.textContent = "Veuillez entrer une concentration de chlore valide.";
+                    customBleachValueInput.focus();
+                    return;
+                }
+                bleachConcentration = customConcentration;
+            }
+
+            // --- Calculs ---
+            
+            // *** CORRECTION DE LA LOGIQUE ICI ***
+            // Déterminer la concentration cible en mg/L selon le type de puits
+            const wellType = document.querySelector('input[name="well-type"]:checked').value;
+            let targetChlorineConcentrationMgPerL;
+
+            if (wellType === 'new') {
+                targetChlorineConcentrationMgPerL = 250; // Concentration pour un NOUVEAU puits
+            } else {
+                targetChlorineConcentrationMgPerL = 50;   // Concentration pour un puits EXISTANT
+            }
+
+            // Volume d'eau pour un puits de 6": ~5.56 Litres par pied de hauteur.
+            const LITERS_PER_FOOT_IN_6_INCH_WELL = 5.56;
+            const waterVolumeLiters = waterDepthFeet * LITERS_PER_FOOT_IN_6_INCH_WELL;
+            
+            // Convertir la concentration de l'eau de Javel de % en mg/L
+            const bleachConcentrationMgPerL = bleachConcentration * 10000;
+            
+            // Calculer la quantité d'eau de Javel nécessaire en litres
+            const requiredBleachLiters = (waterVolumeLiters * targetChlorineConcentrationMgPerL) / bleachConcentrationMgPerL;
+            const requiredBleachMilliliters = requiredBleachLiters * 1000;
+
+            // --- Affichage des résultats ---
+            if (requiredBleachLiters >= 1) {
+                resultText.textContent = `${requiredBleachLiters.toFixed(2)} Litres`;
+            } else {
+                resultText.textContent = `${Math.round(requiredBleachMilliliters)} ml`;
+            }
+            resultSubtext.textContent = `(Pour un volume d'eau estimé à ${Math.round(waterVolumeLiters)} L)`;
+            
+            resultsContainer.classList.add('visible');
+            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    </script>
+</body>
+</html>
